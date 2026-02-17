@@ -1,24 +1,25 @@
-target/
-!.mvn/wrapper/maven-wrapper.jar
+# Terraform files
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
+# Terraform lock file (optional – usually commit this)
+# .terraform.lock.hcl
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
+# Sensitive variable files
+*.tfvars
+*.tfvars.json
 
-### NetBeans ###
-nbproject/private/
-build/
-nbbuild/
-dist/
-nbdist/
-.nb-gradle/
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI config files
+.terraformrc
+terraform.rc
+
+# macOS
+.DS_Store
