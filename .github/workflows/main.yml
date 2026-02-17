@@ -113,3 +113,4 @@ jobs:
     # --------------------------------------------------
       - name: Run Ansible Playbook
         run: ansible-playbook -i inv.ini deploy.yml   
+
