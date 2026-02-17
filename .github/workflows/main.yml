@@ -38,7 +38,7 @@ jobs:
 
       - name: Terraform Init
         working-directory: terraform
-        run: terraform init
+        run: terraform init -reconfigure
 
       - name: Terraform Apply
         working-directory: terraform
@@ -79,42 +79,30 @@ jobs:
           docker push $IMAGE_URI
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
-
     # --------------------------------------------------
-    # 8️⃣ Install Ansible
+    # 8️⃣ Install Ansible & AWS Collection
     # --------------------------------------------------
-      - name: Install Ansible & AWS SSM collection
+      - name: Install Ansible
         run: |
           sudo apt update
-          sudo apt install -y ansible python3-boto3 python3-botocore
-          ansible-galaxy collection install amazon.aws
+          sudo apt install -y ansible python3-pip
+          pip3 install "boto3" "botocore" "amazon.aws"
 
     # --------------------------------------------------
-    # 9️⃣ Create SSH Key
+    # 9️⃣ Create SSM Inventory
     # --------------------------------------------------
-      - name: Create SSH Key
+      - name: Create SSM Inventory
         run: |
-          echo "${{ secrets.EC2_KEY }}" > key.pem
-          chmod 600 key.pem
-
-    # --------------------------------------------------
-    # 🔟 Get EC2 Public IP & Create Inventory
-    # --------------------------------------------------
-      - name: Create Inventory
-        run: |
-          PUBLIC_IP=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=Web-Server" \
-            --query "Reservations[*].Instances[*].PublicIpAddress" \
-            --output text)
-
           echo "[web]" > inv.ini
-          echo "$PUBLIC_IP ansible_user=ubuntu ansible_ssh_private_key_file=key.pem" >> inv.ini
+          INSTANCE_IDS=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=Web-Server" "Name=instance-state-name,Values=running" \
+            --query "Reservations[*].Instances[*].InstanceId" --output text)
+          for ID in $INSTANCE_IDS; do
+            echo "$ID ansible_connection=amazon.aws.aws_ssm" >> inv.ini
+          done
 
     # --------------------------------------------------
-    # 1️⃣1️⃣ Run Ansible Playbook
+    # 🔟 Run Ansible Playbook (via SSM)
     # --------------------------------------------------
-      - name: Test connection to EC2 via SSM
-        run: ansible -i inv.ini all -m ping
-
       - name: Run Ansible Playbook
         run: ansible-playbook -i inv.ini playbook/playbook.yaml
