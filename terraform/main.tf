@@ -1,8 +1,6 @@
-
 # -----------------------------
 # Default VPC & Subnet
 # -----------------------------
-
 data "aws_vpc" "default" {
   default = true
 }
@@ -17,7 +15,6 @@ data "aws_subnets" "default" {
 # -----------------------------
 # IAM Role for SSM
 # -----------------------------
-
 resource "aws_iam_role" "ec2_ssm_role" {
   name = "ec2-ssm-role"
 
@@ -32,14 +29,6 @@ resource "aws_iam_role" "ec2_ssm_role" {
     }]
   })
 }
-resource "aws_s3_bucket" "state" {
-  bucket = "my-unique-terraform-state-bucket-123"
-
-  # Do NOT destroy accidentally
-  lifecycle {
-    prevent_destroy = true
-  }
-}
 
 resource "aws_iam_role_policy_attachment" "ssm_attach" {
   role       = aws_iam_role.ec2_ssm_role.name
@@ -52,9 +41,19 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 }
 
 # -----------------------------
-# Security Group (NO SSH)
+# Protect Terraform State Bucket
 # -----------------------------
+resource "aws_s3_bucket" "state" {
+  bucket = "my-unique-terraform-state-bucket-123"
 
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+# -----------------------------
+# Security Group (Java + SSH)
+# -----------------------------
 resource "aws_security_group" "java_sg" {
   name   = "java-app-sg"
   vpc_id = data.aws_vpc.default.id
@@ -66,12 +65,13 @@ resource "aws_security_group" "java_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   ingress {
-  description = "SSH"
-  from_port   = 22
-  to_port     = 22
-  protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -85,10 +85,9 @@ resource "aws_security_group" "java_sg" {
 # -----------------------------
 # EC2 Instance (SSM Enabled)
 # -----------------------------
-
 resource "aws_instance" "server" {
   ami                    = "ami-019715e0d74f695be"
-  instance_type          = "t2.micro"
+  instance_type          = "t3.micro"  # safer for all AZs
   subnet_id              = data.aws_subnets.default.ids[0]
   vpc_security_group_ids = [aws_security_group.java_sg.id]
 
@@ -102,7 +101,6 @@ resource "aws_instance" "server" {
 # -----------------------------
 # ECR Repository
 # -----------------------------
-
 resource "aws_ecr_repository" "app_repo" {
   name = "java-app-repo"
 
