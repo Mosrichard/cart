@@ -32,6 +32,14 @@ resource "aws_iam_role" "ec2_ssm_role" {
     }]
   })
 }
+resource "aws_s3_bucket" "state" {
+  bucket = "my-unique-terraform-state-bucket-123"
+
+  # Do NOT destroy accidentally
+  lifecycle {
+    prevent_destroy = true
+  }
+}
 
 resource "aws_iam_role_policy_attachment" "ssm_attach" {
   role       = aws_iam_role.ec2_ssm_role.name
