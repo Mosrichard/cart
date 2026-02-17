@@ -1,0 +1,115 @@
+name: CICD ( TF + EC2 + DOCKER + ECR + ANSIBLE )
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ap-south-1
+      ECR_REPO_NAME: java-app-repo
+
+    steps:
+    # --------------------------------------------------
+    # 1️⃣ Checkout Repository
+    # --------------------------------------------------
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+    # --------------------------------------------------
+    # 2️⃣ Configure AWS Credentials
+    # --------------------------------------------------
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+    # --------------------------------------------------
+    # 3️⃣ Setup Terraform
+    # --------------------------------------------------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve
+
+    # --------------------------------------------------
+    # 4️⃣ Setup Java & Build JAR
+    # --------------------------------------------------
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build JAR
+        run: mvn clean package
+
+    # --------------------------------------------------
+    # 5️⃣ Get AWS Account ID
+    # --------------------------------------------------
+      - name: Get AWS Account ID
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "ACCOUNT_ID=$ACCOUNT_ID" >> $GITHUB_ENV
+
+    # --------------------------------------------------
+    # 6️⃣ Login to ECR
+    # --------------------------------------------------
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+    # --------------------------------------------------
+    # 7️⃣ Build & Push Docker Image
+    # --------------------------------------------------
+      - name: Build & Push Image
+        run: |
+          IMAGE_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+    # --------------------------------------------------
+    # 8️⃣ Install Ansible
+    # --------------------------------------------------
+      - name: Install Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible
+
+    # --------------------------------------------------
+    # 9️⃣ Create SSH Key
+    # --------------------------------------------------
+      - name: Create SSH Key
+        run: |
+          echo "${{ secrets.EC2_KEY }}" > key.pem
+          chmod 600 key.pem
+
+    # --------------------------------------------------
+    # 🔟 Get EC2 Public IP & Create Inventory
+    # --------------------------------------------------
+      - name: Create Inventory
+        run: |
+          PUBLIC_IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=Web-Server" \
+            --query "Reservations[*].Instances[*].PublicIpAddress" \
+            --output text)
+
+          echo "[web]" > inv.ini
+          echo "$PUBLIC_IP ansible_user=ubuntu ansible_ssh_private_key_file=key.pem" >> inv.ini
+
+    # --------------------------------------------------
+    # 1️⃣1️⃣ Run Ansible Playbook
+    # --------------------------------------------------
+      - name: Run Ansible Playbook
+        run: ansible-playbook -i inv.ini deploy.yml   
