@@ -41,17 +41,6 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 }
 
 # -----------------------------
-# Protect Terraform State Bucket
-# -----------------------------
-resource "aws_s3_bucket" "state" {
-  bucket = "my-unique-terraform-state-bucket-123"
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-# -----------------------------
 # Security Group (Java + SSH)
 # -----------------------------
 resource "aws_security_group" "java_sg" {
