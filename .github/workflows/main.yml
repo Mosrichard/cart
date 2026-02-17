@@ -72,12 +72,13 @@ jobs:
     # --------------------------------------------------
     # 7️⃣ Build & Push Docker Image
     # --------------------------------------------------
-      - name: Build & Push Docker Image
+      - name: Build & Push Image
         run: |
           IMAGE_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest
-          docker build -t $IMAGE_URI .
+          docker build -t $IMAGE_URI -f docker/Dockerfile .
           docker push $IMAGE_URI
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
 
     # --------------------------------------------------
     # 8️⃣ Install Ansible
