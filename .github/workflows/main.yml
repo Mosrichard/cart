@@ -113,4 +113,4 @@ jobs:
     # 1️⃣1️⃣ Run Ansible Playbook
     # --------------------------------------------------
       - name: Run Ansible Playbook
-        run: ansible-playbook -i inv.ini playbook.yml
+        run: ansible-playbook -i inv.ini playbook.yaml
