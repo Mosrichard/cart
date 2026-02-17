@@ -82,13 +82,13 @@ jobs:
     # --------------------------------------------------
     # 8️⃣ Install Ansible & AWS Collection
     # -------------------------------------------------
-      - name: Install Ansible
+      - name: Install Ansible & AWS dependencies
         run: |
           sudo apt update
           sudo apt install -y ansible python3-pip
-          pip3 install boto3 botocore
+          python3 -m pip install --upgrade pip
+          python3 -m pip install boto3 botocore
           ansible-galaxy collection install amazon.aws
-
 
     # --------------------------------------------------
     # 9️⃣ Create SSM Inventory
