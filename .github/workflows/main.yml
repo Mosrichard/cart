@@ -83,10 +83,11 @@ jobs:
     # --------------------------------------------------
     # 8️⃣ Install Ansible
     # --------------------------------------------------
-      - name: Install Ansible
+      - name: Install Ansible & AWS SSM collection
         run: |
           sudo apt update
-          sudo apt install -y ansible
+          sudo apt install -y ansible python3-boto3 python3-botocore
+          ansible-galaxy collection install amazon.aws
 
     # --------------------------------------------------
     # 9️⃣ Create SSH Key
@@ -112,5 +113,8 @@ jobs:
     # --------------------------------------------------
     # 1️⃣1️⃣ Run Ansible Playbook
     # --------------------------------------------------
+      - name: Test connection to EC2 via SSM
+        run: ansible -i inv.ini all -m ping
+
       - name: Run Ansible Playbook
         run: ansible-playbook -i inv.ini playbook/playbook.yaml
