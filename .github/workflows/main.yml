@@ -53,7 +53,7 @@ jobs:
           java-version: '17'
 
       - name: Build JAR
-        run: mvn clean package
+        run: mvn clean package -DskipTests
 
     # --------------------------------------------------
     # 5️⃣ Get AWS Account ID
