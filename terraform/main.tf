@@ -76,7 +76,7 @@ resource "aws_security_group" "java_sg" {
 # -----------------------------
 resource "aws_instance" "server" {
   ami                    = "ami-019715e0d74f695be"
-  instance_type          = "t3.micro"  # safer for all AZs
+  instance_type          = "t3.micro"  
   subnet_id              = data.aws_subnets.default.ids[0]
   vpc_security_group_ids = [aws_security_group.java_sg.id]
 
