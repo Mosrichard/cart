@@ -1,4 +1,4 @@
-name: CICD ( TF + EC2 + DOCKER + ECR + ANSIBLE )
+name: CICD (TF + EC2 + DOCKER + ECR + ANSIBLE)
 
 on:
   push:
@@ -72,7 +72,7 @@ jobs:
     # --------------------------------------------------
     # 7️⃣ Build & Push Docker Image
     # --------------------------------------------------
-      - name: Build & Push Image
+      - name: Build & Push Docker Image
         run: |
           IMAGE_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest
           docker build -t $IMAGE_URI .
@@ -112,5 +112,4 @@ jobs:
     # 1️⃣1️⃣ Run Ansible Playbook
     # --------------------------------------------------
       - name: Run Ansible Playbook
-        run: ansible-playbook -i inv.ini deploy.yml   
-
+        run: ansible-playbook -i inv.ini deploy.yml
